@@ -1,0 +1,72 @@
+# Estiramiento de enlace O-H
+dimension       3
+units           real
+atom_style      full
+
+# Leemos el sistema desde un archivo
+read_data       h2o.data
+
+# Parametros de interación tipo Lennard-Jones
+pair_style      lj/cut/coul/long 10.0
+kspace_style    pppm 1e-4
+
+# Comportamiento armínico de los enlaces
+bond_style      harmonic
+angle_style     harmonic
+
+# Parametros de interacción H-H, H-O, O-O
+pair_coeff      1    1    0.1521 3.1589
+pair_coeff      1    2    0.0000 0.0000
+pair_coeff      2    2    0.0000 0.0000
+bond_coeff      1    450.0 0.9572
+angle_coeff     1    100.0 104.52
+
+# Generando valore
+## step   -> paso (fs)
+## pe     -> energía potencial (kcal/mol)
+## ebond  -> energía de enlace (kcal/mol)
+## eangle -> energía angular   (kcal/mol)
+thermo_style custom step pe ebond eangle
+thermo 1
+
+# Configurar barrido de distancia
+# Open output file
+print "Angulo(°) TotalEnergia(kcal/mol) AngularEnergia(kcal/mol) EnlaceEnergia(kcal/mol)" file angulo_energia.dat
+print "Angulo(°) TotalEnergia(kcal/mol) AngularEnergia(kcal/mol) EnlaceEnergia(kcal/mol)" file angulo_energia.txt
+print "Angulo(°),TotalEnergia(kcal/mol),AngularEnergia(kcal/mol),EnlaceEnergia(kcal/mol)" file angulo_energia.csv
+
+
+# bucle de los ángulos
+variable        contador loop 36
+label           bucle_angulo
+
+# aumentamos en 5° el angulo
+variable        angulo_actual equal 5.0+(v_contador-1)*5.0
+angle_coeff     1    100.0 ${angulo_actual}
+
+# ejecutamos
+run             0
+
+# Capturamos los valores de energía para cada paso
+variable        energia_total equal pe
+variable        energia_angular equal eangle
+variable        energia_enlace equal ebond
+
+# Ahora guardamos en nuestro archivo de salida
+print "${angulo_actual} ${energia_total} ${energia_angular} ${energia_enlace}" append angulo_energia.dat
+print "${angulo_actual} ${energia_total} ${energia_angular} ${energia_enlace}" append angulo_energia.txt
+print "${angulo_actual},${energia_total},${energia_angular},${energia_enlace}" append angulo_energia.csv
+
+# Aumentamos el angulo
+next contador
+
+# siguiente paso del bucle
+jump SELF bucle_angulo
+
+print "=========================================="
+print "Barrido angular completado exitosamente!"
+print "Resultados guardados en:"
+print "- angulo_energia.dat"
+print "- angulo_energia.txt" 
+print "- angulo_energia.csv"
+print "=========================================="

@@ -1,0 +1,71 @@
+# Estiramiento de enlace O-H - Barrido de distancia
+# ---------------------------------------------------------------------------
+# 1. CONFIGURACIÓN BÁSICA
+# ---------------------------------------------------------------------------
+dimension       3
+units           real
+atom_style      full
+boundary        p p p
+neighbor        2.0 bin
+neigh_modify    every 1 delay 0 check yes
+
+# ---------------------------------------------------------------------------
+# 2. LECTURA DE LA ESTRUCTURA
+# ---------------------------------------------------------------------------
+read_data       h2o.data
+
+# Parametros de interaci�n
+pair_style      lj/cut/coul/long 10.0
+kspace_style    pppm 1e-4
+bond_style      harmonic
+angle_style     harmonic
+
+# Parametros TIP3P para agua
+pair_coeff      1 1 0.1521 3.1589    # O-O
+pair_coeff      1 2 0.0000 0.0000    # O-H
+pair_coeff      2 2 0.0000 0.0000    # H-H
+angle_coeff     1 55.0 104.52        # H-O-H
+
+# Fijar �tomos para evitar movimiento
+fix             fset all setforce 0.0 0.0 0.0
+
+# Configurar output de energ�a
+thermo_style    custom step pe ebond eangle
+thermo          1
+
+# Crear archivos de salida
+print "Distancia(A) TotalEnergia(kcal/mol) AngularEnergia(kcal/mol) EnlaceEnergia(kcal/mol)" file distancia_energia.dat
+print "Distancia(A) TotalEnergia(kcal/mol) AngularEnergia(kcal/mol) EnlaceEnergia(kcal/mol)" file distancia_energia.txt
+print "Distancia(A),TotalEnergia(kcal/mol),AngularEnergia(kcal/mol),EnlaceEnergia(kcal/mol)" file distancia_energia.csv
+
+# Bucle de barrido de distancia (0.7� a 3.5� en pasos de 0.1�)
+variable        contador loop 29
+label           bucle_distancia
+
+variable        distancia_actual equal 0.7 + (v_contador-1)*0.1
+bond_coeff      1 450.0 ${distancia_actual}
+
+# Ejecutar c�lculo de energ�a (0 pasos de din�mica)
+run             0
+
+# Capturar valores de energ�a
+variable        energia_total equal pe
+variable        energia_angular equal eangle
+variable        energia_enlace equal ebond
+
+# Guardar en archivos
+print "${distancia_actual} ${energia_total} ${energia_angular} ${energia_enlace}" append distancia_energia.dat
+print "${distancia_actual} ${energia_total} ${energia_angular} ${energia_enlace}" append distancia_energia.txt
+print "${distancia_actual},${energia_total},${energia_angular},${energia_enlace}" append distancia_energia.csv
+
+# Siguiente iteraci�n
+next            contador
+jump            SELF bucle_distancia
+
+print "=========================================="
+print "Barrido de distancia completado exitosamente!"
+print "Resultados guardados en:"
+print "- distancia_energia.dat"
+print "- distancia_energia.txt" 
+print "- distancia_energia.csv"
+print "=========================================="

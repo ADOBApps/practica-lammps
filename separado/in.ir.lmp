@@ -1,0 +1,87 @@
+# ===========================================================================
+# SIMULACIÓN LAMMPS PARA ANÁLISIS COMBINADO VACF + MSD
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# 1. CONFIGURACIÓN BÁSICA
+# ---------------------------------------------------------------------------
+dimension       3
+units           real
+atom_style      full
+boundary        p p p
+neighbor        2.0 bin
+neigh_modify    every 1 delay 0 check yes
+
+# ---------------------------------------------------------------------------
+# 2. LECTURA DE LA ESTRUCTURA
+# ---------------------------------------------------------------------------
+read_data       h2o.data
+
+# ---------------------------------------------------------------------------
+# 3. DEFINICIÓN DE POTENCIAL (TIP3P para agua)
+# ---------------------------------------------------------------------------
+pair_style      lj/cut/coul/long 10.0
+kspace_style    pppm 1e-4
+bond_style      harmonic
+angle_style     harmonic
+
+pair_coeff      1 1 0.1553 3.1536  # O-O
+pair_coeff      1 2 0.0000 0.0000  # O-H
+pair_coeff      2 2 0.0000 0.0000  # H-H
+bond_coeff      1 450.0 0.9572     # O-H
+angle_coeff     1 55.0 104.52      # H-O-H
+
+# ---------------------------------------------------------------------------
+# 4. MINIMIZACIÓN DE ENERGÍA
+# ---------------------------------------------------------------------------
+minimize        1e-6 1e-8 1000 10000
+reset_timestep  0
+
+# ---------------------------------------------------------------------------
+# 5. EQUILIBRIO (NVT)
+# ---------------------------------------------------------------------------
+velocity        all create 300.0 12345 rot yes dist gaussian
+fix             nvt all nvt temp 300 300 100
+thermo          100
+thermo_style    custom step temp pe ke etotal press
+run             500  # 5 ps de equilibrio
+unfix           nvt
+
+# ---------------------------------------------------------------------------
+# 6. PRODUCCIÓN (NVE) - CÁLCULO DE VACF Y MSD
+# ---------------------------------------------------------------------------
+fix             nve all nve
+
+# ==================== CÁLCULO DE VACF (Para espectro IR) ====================
+compute         myVACF all vacf
+fix             vacf_out all ave/time 1 1 1 c_myVACF[4] file resultados/vacf_total.txt mode scalar
+
+# ==================== CÁLCULO DE MSD (Para dinámica estructural) ====================
+compute         myMSD all msd com yes
+fix             msd_out all ave/time 1 1 1 c_myMSD[4] file resultados/msd_total.txt mode scalar
+
+# ==================== GUARDAR DATOS ADICIONALES ====================
+variable        t equal step*dt
+fix             data_out all ave/time 100 1 200 v_t c_myVACF[4] c_myMSD[4] file resultados/dynamics_data.txt mode scalar
+
+# ---------------------------------------------------------------------------
+# 7. EJECUCIÓN DE LA DINÁMICA
+# ---------------------------------------------------------------------------
+thermo_style    custom step temp pe ke etotal c_myVACF[4] c_myMSD[4]
+thermo          1000
+timestep        1.0
+run             20000  # 20 ps de producción
+
+# ---------------------------------------------------------------------------
+# 8. MENSAJE FINAL
+# ---------------------------------------------------------------------------
+print "=================================================================="
+print "SIMULACIÓN COMPLETADA - DATOS PARA ANÁLISIS COMBINADO"
+print "=================================================================="
+print "Archivos generados:"
+print "1. vacf_total.txt    - VACF para espectro IR"
+print "2. msd_total.txt     - MSD para dinámica estructural"
+print "3. dynamics_data.txt - Datos combinados de dinámica"
+print ""
+print "Estos archivos pueden usarse en la pestaña 'VACF + MSD'"
+print "=================================================================="
