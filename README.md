@@ -52,7 +52,9 @@ bash
 mkdir practica_ir_lammps
 cd practica_ir_lammps
 # Copiar los archivos water_dynamics.lmp y h2o.data aquí
-mkdir resultados  # Para los archivos de salida
+mkdir resultados  
+
+# Para los archivos de salida
 2. Ejecución de LAMMPS:
 bash
 lmp -in water_dynamics.lmp
@@ -97,7 +99,7 @@ El ángulo de equilibrio del agua es aproximadamente 104.5°
 
 La longitud de enlace O-H de equilibrio es aproximadamente 0.9572 Å
 
-Los resultados de VACF pueden transformarse a espectros IR mediante Transformada de Fourier
+Los resultados de VACF pueden transformarse a espectros IR mediante Transformada de Fourier usando PySimple Spectrometer [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17068650.svg)](https://doi.org/10.5281/zenodo.17068650)
 
 🆘 Soporte y Ayuda
 Si encuentras problemas con:
